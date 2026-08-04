@@ -228,6 +228,20 @@ export function useDeck(handlers: DeckHandlers) {
             case "tool.started":
               if (firstToken === null) firstToken = Math.round(performance.now() - started);
               toolCalls++;
+              // Flush whatever sentence is still buffered before handing the
+              // tool over.
+              //
+              // The splitter holds a line until whitespace proves it ended, and
+              // that whitespace arrives with the *next* thing said — which is
+              // after the tool. Without this the action is queued ahead of the
+              // sentence that introduces it, and every site opens one line
+              // early: you watch the second site appear while the voice is
+              // still describing the first.
+              //
+              // A tool boundary is a safe place to flush: the model has stopped
+              // talking in order to go and do something, so whatever it just
+              // said is complete.
+              spoken.current = drain(spoken.current, true);
               cb.current.onTool?.(ev.name, ev.args);
               setToolState("tool");
               setTools((t) => [

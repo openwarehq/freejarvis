@@ -43,9 +43,9 @@ export type DemoScript = {
  * counts it reads out are the tools really loaded and the jobs really armed.
  * Written as words rather than digits because they are going to be spoken.
  *
- *   {tools}  {memories}  {jobs}  {sessions}  {voice}
+ *   {tools}  {memories}  {jobs}  {sessions}  {sites}  {voice}
  */
-export const PLACEHOLDER = /\{(tools|memories|jobs|sessions|voice)\}/g;
+export const PLACEHOLDER = /\{(tools|memories|jobs|sessions|sites|voice)\}/g;
 
 export const SCRIPTS: DemoScript[] = [
   {
@@ -69,6 +69,32 @@ export const SCRIPTS: DemoScript[] = [
         output: 'Opened "azur" on the deck — AZUR — Twenty-eight metres of horizon.',
       },
       { kind: "say", text: "AZUR — twenty-eight metres, Saint-Tropez, ready for listing." },
+    ],
+  },
+  {
+    id: "portfolio",
+    label: "Site walkthrough",
+    prompt: "Run me through the site work.",
+    // Three sites, chosen for how differently they look rather than for what
+    // they sell: deep navy and photographic, then bright cream and minimal,
+    // then electric cyan on black. The window swapping between them is the
+    // whole point, and three dark sites in a row would show nothing.
+    //
+    // Each `open_site` is queued *before* the line that names it, so the site
+    // is already on screen while it is being described.
+    steps: [
+      { kind: "pause", ms: 150 },
+      { kind: "say", text: "Of course — pulling up the site work." },
+      { kind: "tool", name: "open_site", args: { name: "azur" }, runMs: 300,
+        output: 'Opened "azur" — AZUR — Twenty-eight metres of horizon.' },
+      { kind: "say", text: "AZUR — yacht charter, Saint-Tropez." },
+      { kind: "tool", name: "open_site", args: { name: "sable" }, runMs: 300,
+        output: 'Opened "sable" — SABLE — Softness, engineered.' },
+      { kind: "say", text: "SABLE — loungewear, cotton and silk." },
+      { kind: "tool", name: "open_site", args: { name: "volt" }, runMs: 300,
+        output: 'Opened "volt" — VOLT — Drive on light.' },
+      { kind: "say", text: "VOLT — all-electric, five hundred miles." },
+      { kind: "say", text: "Three of {sites} — say the word for any of the rest." },
     ],
   },
   {

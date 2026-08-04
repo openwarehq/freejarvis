@@ -3,6 +3,7 @@ import { chunk, count, PLACEHOLDER, SCRIPTS, scriptById } from "@/lib/demo";
 import { sse } from "@/lib/events";
 import { listJobs, listMemories, listSessions } from "@/lib/db";
 import { builtinTools } from "@/lib/tools";
+import { listSites } from "@/lib/sites";
 import { voiceConfig } from "@/lib/voice";
 
 export const runtime = "nodejs";
@@ -59,6 +60,7 @@ function stats(): Record<string, string> {
     memories: count(safe(() => listMemories(1000).length, 0), "memory", "memories"),
     jobs: count(safe(() => listJobs().filter((j) => j.enabled).length, 0), "job"),
     sessions: count(safe(() => listSessions(1000).length, 0), "session"),
+    sites: count(safe(() => listSites().length, 0), "site"),
     voice: safe(() => (voiceConfig().enabled ? "ElevenLabs" : "browser synthesis"), "browser synthesis"),
   };
 }

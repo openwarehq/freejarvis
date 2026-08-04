@@ -25,11 +25,31 @@ export default function SiteView({
   const [phase, setPhase] = useState<"opening" | "open">("opening");
   const [title, setTitle] = useState("");
   const frame = useRef<HTMLIFrameElement>(null);
+  // Whether the frame is already on screen. A *swap* is not an *arrival*.
+  const mounted = useRef(false);
 
   useEffect(() => {
-    setPhase("opening");
     setTitle("");
+    // Only the first site fades up from nothing. Replaying that on every swap
+    // blanks the window for 620ms each time — on a walkthrough that changes
+    // site every three seconds, a fifth of the shot is an empty rectangle.
+    // Subsequent sites keep the frame and just re-run the sweep.
+    if (mounted.current) {
+      setPhase("open");
+      return;
+    }
+    mounted.current = true;
+    setPhase("opening");
     const t = setTimeout(() => setPhase("open"), 620);
+    return () => clearTimeout(t);
+  }, [name]);
+
+  // The sweep fires on every site, arrival or swap — it is what makes a change
+  // of content read as deliberate rather than as a flicker.
+  const [sweeping, setSweeping] = useState(true);
+  useEffect(() => {
+    setSweeping(true);
+    const t = setTimeout(() => setSweeping(false), 900);
     return () => clearTimeout(t);
   }, [name]);
 
@@ -131,7 +151,7 @@ export default function SiteView({
           />
 
           {/* one sweep across the frame as it lands */}
-          {phase === "opening" && (
+          {sweeping && (
             <div
               className="pointer-events-none absolute inset-0 overflow-hidden"
               aria-hidden="true"

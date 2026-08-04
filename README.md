@@ -216,7 +216,8 @@ that can read a file, and the difference should be a line you wrote on purpose.
 ## Demo mode
 
 ```
-http://localhost:4333/?demo=1&script=yacht
+http://localhost:4333/?demo=1&script=yacht        # greet, status, open the listing
+http://localhost:4333/?demo=1&script=portfolio    # three sites, swapped in place
 ```
 
 A scripted take, for filming. The deck runs its real components — the orb is the orb, the voice
@@ -257,6 +258,8 @@ on an estimate of it.
   the shipped take is ~170 characters and runs ~12 seconds
 - Prefer an em dash to a full stop where you want a beat — a second sentence is a second clip,
   and clips are where seams live
+- Put a `tool` step **before** the line that describes what it did, not after. The action is
+  queued into the speech timeline, so the site is already on screen while it is being named
 
 Nothing reaches it by accident. And if someone wants to know whether this actually works, close
 it and just use it — that is the better demo.
