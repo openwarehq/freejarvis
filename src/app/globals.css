@@ -1,0 +1,229 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────────────
+   freejarvis — a heads-up display, not a document.
+
+   One hue drives everything. It is set per deck state on <html>, so the
+   whole interface — chrome, glow, orb, captions — changes temperature when
+   the agent starts thinking or reaches for a tool. Nothing else is coloured.
+   ────────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/space-grotesk.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/geist.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --h: 172;
+  --s: 85%;
+  --l: 58%;
+
+  --accent: hsl(var(--h) var(--s) var(--l));
+  --accent-dim: hsl(var(--h) var(--s) var(--l) / 0.45);
+  --accent-ghost: hsl(var(--h) var(--s) var(--l) / 0.12);
+
+  --void: #000;
+  --panel: rgba(8, 10, 13, 0.72);
+  --panel-solid: #07090c;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-bright: rgba(255, 255, 255, 0.16);
+  --text: rgba(255, 255, 255, 0.88);
+  --dim: rgba(255, 255, 255, 0.42);
+  --faint: rgba(255, 255, 255, 0.22);
+
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --chrome: "Space Grotesk", system-ui, sans-serif;
+  --body: "Geist", system-ui, sans-serif;
+
+  /* The hue transition is what sells the state change. Slow enough to read
+     as the room changing temperature, fast enough not to lag the event. */
+  transition: --h 600ms ease;
+}
+
+@property --h {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 172;
+}
+
+html[data-state="idle"] { --h: 172; --s: 80%; --l: 55%; }
+html[data-state="listening"] { --h: 205; --s: 92%; --l: 62%; }
+html[data-state="thinking"] { --h: 268; --s: 88%; --l: 66%; }
+html[data-state="speaking"] { --h: 38; --s: 95%; --l: 60%; }
+html[data-state="tool"] { --h: 148; --s: 82%; --l: 55%; }
+html[data-state="awaiting-approval"] { --h: 8; --s: 92%; --l: 60%; }
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+body {
+  /* A faint scan grid. Barely visible, but a flat black field reads as a
+     loading screen and this reads as a surface. */
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+::selection { background: var(--accent); color: #000; }
+
+/* ── chrome type ─────────────────────────────────────────────────────── */
+
+.label {
+  font-family: var(--chrome);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.label-bright { color: var(--text); }
+
+.data {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── surfaces ────────────────────────────────────────────────────────── */
+
+.glass {
+  background: var(--panel);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid var(--line);
+}
+
+.hairline { border-color: var(--line); }
+
+/* ── scrollbars ──────────────────────────────────────────────────────── */
+
+.scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+.scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 99px;
+}
+.scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ── motion ──────────────────────────────────────────────────────────── */
+
+@keyframes fj-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulse { animation: fj-pulse 1.6s ease-in-out infinite; }
+
+@keyframes fj-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.rise { animation: fj-rise 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes fj-sheet {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: none; }
+}
+.sheet { animation: fj-sheet 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes fj-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(320%); }
+}
+.sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, var(--accent-ghost), transparent);
+  animation: fj-sweep 1.9s linear infinite;
+}
+
+/* The caption is the one piece of type that has to read from across a room. */
+.caption {
+  font-family: var(--body);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-shadow:
+    0 2px 30px rgba(0, 0, 0, 0.9),
+    0 0 60px hsl(var(--h) var(--s) var(--l) / 0.25);
+}
+
+/* ── controls ────────────────────────────────────────────────────────── */
+
+button { font-family: inherit; color: inherit; }
+
+.btn {
+  font-family: var(--chrome);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 7px 13px;
+  border: 1px solid var(--line-bright);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dim);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--accent-dim);
+  background: var(--accent-ghost);
+}
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-accent {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  background: var(--accent-ghost);
+}
+.btn-accent:hover:not(:disabled) { background: hsl(var(--h) var(--s) var(--l) / 0.2); }
+
+.field {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 9px 11px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 160ms ease;
+}
+.field:focus { border-color: var(--accent-dim); }
+.field::placeholder { color: var(--faint); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,15 @@
+node_modules
+.next
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+
+# Runtime state — your sessions, memory, jobs, identity and workspace.
+# SOUL.md is written from the shipped default on first boot and is yours to
+# edit after that, so it is state, not source.
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/SOUL.md
+data/workspace

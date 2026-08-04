@@ -1,0 +1,30 @@
+services:
+  freejarvis:
+    build: .
+    container_name: freejarvis
+    ports:
+      - "4333:4333"
+    env_file:
+      - .env
+    environment:
+      IN_DOCKER: "1"
+      DATA_DIR: /app/data
+      DB_PATH: /app/data/freejarvis.db
+      SOUL_PATH: /app/data/SOUL.md
+      WORKSPACE_DIR: /app/data/workspace
+      # Everything else — the brain, the voice, the sites folder — comes from
+      # .env. See .env.example.
+      #
+      # SITES_DIR is a path *inside* the container, so mount the folder too:
+      #   volumes:
+      #     - /your/sites:/app/sites:ro
+      #   environment:
+      #     SITES_DIR: /app/sites
+    volumes:
+      # Sessions, memory, jobs, SOUL.md and the agent's workspace.
+      - ./data:/app/data
+    # Lets the container reach Ollama, LM Studio or a Hermes gateway
+    # running on the host.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
