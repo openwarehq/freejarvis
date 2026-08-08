@@ -195,6 +195,13 @@ Eight built-ins on a direct model, and two more you switch on. Two of them ask f
 | `write_file` | inside `data/workspace` | **asks first** |
 | `schedule` | create a cron job | **asks first** |
 | `open_site` | frame a site on the deck | only when `SITES_DIR` is set |
+| `post_reel` | carry the next clip through Instagram's uploader | **stops before Share** |
+
+`post_reel` is the one tool that leaves the machine, and it is deliberately **not** gated. The
+approval card is for acts that reach the outside world, and this one stops a button short of
+one: it takes the oldest clip in the reel folder that has not gone yet, measures it, writes a
+caption, opens a browser and fills the whole post in — then leaves Share alone. The gate is the
+button, and the button is yours. See **Sending a reel** below.
 
 Every path resolves and is compared against the real workspace root *after* symlinks — a link
 planted in the workspace pointing at `/etc` does not work, and neither does `../`.
@@ -218,6 +225,7 @@ that can read a file, and the difference should be a line you wrote on purpose.
 ```
 http://localhost:4333/?demo=1&script=yacht        # greet, status, open the listing
 http://localhost:4333/?demo=1&script=portfolio    # three sites, swapped in place
+http://localhost:4333/?demo=1&script=reel         # or just press ⌘⇧E anywhere on the deck
 ```
 
 A scripted take, for filming. The deck runs its real components — the orb is the orb, the voice
@@ -265,6 +273,85 @@ Nothing reaches it by accident. And if someone wants to know whether this actual
 it and just use it — that is the better demo.
 
 <img src=".github/assets/freejarvis-take.png" alt="A scripted take" width="820">
+
+---
+
+## Sending a reel
+
+**⌘⇧E.** That is the entire interface.
+
+```
+⌘⇧E
+  ├─ oldest clip in ~/Movies/Freejarvis that has not gone yet
+  ├─ 0:09 · 1080×1920 portrait · 41 cuts · 60fps
+  ├─ a caption
+  ├─ the browser opens — visible, you watch it
+  ├─ Create → file attached → Next → Next → caption typed
+  └─ stops. Share is yours to press.
+```
+
+Everything else on this deck is something you talk to. This is the one thing you want done
+while your hands are somewhere else, so it is one key, off the ⌘⌥⇧ chord the filming keys use,
+and it works whether or not a take is loaded.
+
+It runs as a script, and **the tool step in that script is live** — the rest of a take is a tape
+because a free-tier model is slow and occasionally empty, but a reel take that narrates an
+upload without uploading is not a demo of anything. That one step really opens the browser,
+really attaches the file, and really stops at Share.
+
+### The browser
+
+Its own Chrome profile, at `data/reels/chrome`, which you log into Instagram in once:
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --user-data-dir="$PWD/data/reels/chrome" https://www.instagram.com/
+```
+
+Not a workaround. Since Chrome 136 the remote-debugging port is refused outright on the default
+profile, because "any local process can drive the browser you are logged into everywhere" is a
+real hole. A separate profile holds one session, for one site, that you put there on purpose —
+nothing here can reach your mail or the tabs in your other window.
+
+Buttons are found **by what they say**. Instagram's class names change without notice;
+`._acan._acap` is a selector with a shelf life measured in weeks, while "Create", "Next" and
+"Share" have not moved in years and are how a person finds them too. The file never goes near
+the OS file picker — CDP sets it on the `<input type=file>` directly. The caption goes in
+through the input pipeline, because setting `textContent` on their composer looks right on
+screen and posts **empty**.
+
+### The caption
+
+With `ANTHROPIC_API_KEY` set, four stills are pulled evenly across the clip and a model writes
+the caption from what is actually in frame, under instructions never to invent a place, a
+person, a brand or an event.
+
+Without a key it is built from the measurements and says only those:
+
+```
+hangar demo
+
+0:09 · 41 cuts · 1080×1920 · 60fps
+
+Shot on a Saturday, some time before dawn.
+```
+
+That is a style, not an apology. A caption that invents what is in a video nothing has looked at
+is worse than a caption that counts. `Screen Recording 2026-04-24 at 5.04.01 PM` is not a title
+and is thrown away rather than dressed up; `my_edit_v2` is your own words and is kept. The cut
+count comes from running the clip through ffmpeg's scene filter — nothing else in the metadata
+tells you whether nine seconds holds one cut or forty.
+
+### The folder
+
+`~/Movies/Freejarvis`, or wherever `REELS_DIR` points. Oldest first, so it is a queue and not a
+stack. A file still being written is not ready — an AirDrop or an export lands as a growing
+file, and picking one up halfway gives a corrupt upload with no error anywhere. What has flown
+is remembered by content rather than path, so filing a clip into an archive afterwards does not
+make it look new. And **cancelling leaves the clip at the front of the queue**: only a real post
+is recorded, which is what you want when you cancelled on purpose.
+
+Needs `ffmpeg` on the host (`brew install ffmpeg`).
 
 ---
 

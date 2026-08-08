@@ -1,0 +1,101 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>fixture uploader</title>
+<!--
+  A stand-in for Instagram's upload flow.
+
+  Not a mock of the driver — the real upload() runs against this, unmodified.
+  It has the same shape as the thing it stands for: a Create control in a nav,
+  a dialog carrying an <input type=file>, two screens that each want "Next",
+  a contenteditable caption box that only updates through input events, and a
+  Share button at the end.
+
+  A driver for a site you must not log a test into is otherwise untestable,
+  and "it worked when I tried it by hand" is not a test.
+-->
+<style>
+  body{font:16px/1.5 system-ui;margin:0;background:#fafafa;color:#111}
+  nav{display:flex;gap:18px;padding:14px 22px;border-bottom:1px solid #dbdbdb;background:#fff}
+  nav [role=button]{cursor:pointer;padding:6px 10px;border-radius:8px}
+  nav [role=button]:hover{background:#f0f0f0}
+  .screen{display:none;max-width:640px;margin:40px auto;background:#fff;border:1px solid #dbdbdb;border-radius:12px;padding:26px}
+  .screen.on{display:block}
+  .bar{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #dbdbdb;margin:-26px -26px 22px;padding:14px 20px}
+  [role=button].primary{color:#0095f6;font-weight:600;cursor:pointer}
+  #caption{min-height:120px;border:1px solid #dbdbdb;border-radius:8px;padding:12px;outline:none}
+  video{max-width:100%;border-radius:8px;background:#000}
+  .note{color:#8e8e8e;font-size:14px}
+</style>
+
+<nav>
+  <div role="button" id="home">Home</div>
+  <div role="button" id="search">Search</div>
+  <div role="button" id="create">Create</div>
+  <div role="button" id="profile">Profile</div>
+</nav>
+
+<div class="screen" id="s-pick">
+  <div class="bar"><b>Create new post</b></div>
+  <p class="note">Drag photos and videos here</p>
+  <label role="button">Select from computer<input type="file" accept="video/*,image/*" hidden></label>
+</div>
+
+<div class="screen" id="s-crop">
+  <div class="bar"><b>Crop</b><div role="button" class="primary" data-next>Next</div></div>
+  <video id="preview" controls muted></video>
+</div>
+
+<div class="screen" id="s-filter">
+  <div class="bar"><b>Edit</b><div role="button" class="primary" data-next>Next</div></div>
+  <p class="note">Filters would go here.</p>
+</div>
+
+<div class="screen" id="s-caption">
+  <div class="bar"><b>Create new post</b><div role="button" class="primary" id="share">Share</div></div>
+  <div contenteditable="true" role="textbox" aria-label="Write a caption..." id="caption"></div>
+</div>
+
+<div class="screen" id="s-done">
+  <div class="bar"><b>Your post has been shared.</b></div>
+  <p class="note" id="posted-caption"></p>
+</div>
+
+<script>
+  // Deliberately behaves like the real thing in the two ways that matter:
+  // the file input is only in the DOM once Create is pressed, and the caption
+  // box is only "really" filled when an input event fires — setting
+  // textContent leaves window.__caption empty, exactly as a React-backed box
+  // would post empty.
+  const show = (id) => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  };
+  window.__caption = '';
+  window.__shared = false;
+  window.__file = null;
+
+  document.getElementById('create').addEventListener('click', () => show('s-pick'));
+
+  const input = document.querySelector('input[type=file]');
+  input.addEventListener('change', () => {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    window.__file = { name: f.name, size: f.size, type: f.type };
+    document.getElementById('preview').src = URL.createObjectURL(f);
+    show('s-crop');
+  });
+
+  document.querySelectorAll('[data-next]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      show(document.getElementById('s-crop').classList.contains('on') ? 's-filter' : 's-caption');
+    });
+  });
+
+  const box = document.getElementById('caption');
+  box.addEventListener('input', () => { window.__caption = box.innerText; });
+
+  document.getElementById('share').addEventListener('click', () => {
+    window.__shared = true;
+    document.getElementById('posted-caption').textContent = window.__caption;
+    show('s-done');
+  });
+</script>

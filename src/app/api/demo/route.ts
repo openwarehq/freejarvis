@@ -8,7 +8,9 @@ import { voiceConfig } from "@/lib/voice";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// A live step drives a browser through somebody else's upload flow, which is
+// slower than anything else on the deck by an order of magnitude.
+export const maxDuration = 300;
 
 /**
  * `/api/chat`, but the answers come off a tape.
@@ -134,14 +136,26 @@ export async function POST(req: Request) {
             args: JSON.stringify(step.args),
           }),
         );
-        await sleep(step.runMs ?? 1200);
+        // A live step is the one thing in a script that is not a tape: the
+        // real tool runs and its real output is what the agent reads back.
+        // A failure is streamed as the output rather than thrown, so the take
+        // keeps its shape and tells you what went wrong in the agent's voice.
+        let output = step.output ?? "Done.";
+        if (step.live) {
+          const tool = builtinTools().find((t) => t.name === step.name);
+          output = tool
+            ? await tool.run(step.args as Record<string, any>).catch((e: unknown) => `That did not work — ${(e as Error).message}`)
+            : `There is no tool called ${step.name}.`;
+        } else {
+          await sleep(step.runMs ?? 1200);
+        }
         push(
           sse({
             t: "tool.completed",
             id,
             name: step.name,
             ok: true,
-            output: step.output ?? "Done.",
+            output,
           }),
         );
       }

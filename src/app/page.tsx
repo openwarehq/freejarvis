@@ -176,6 +176,20 @@ export default function Deck() {
     // shot. `e.code`, not `e.key`: with Option held on macOS the character is
     // not the letter — A becomes "å", R becomes "®", D becomes "∂".
     const takeKeys = (e: KeyboardEvent) => {
+      // ⌘⇧E — send the next reel, without saying anything.
+      //
+      // Deliberately outside the demo-only guard and off the ⌘⌥⇧ chord the
+      // filming keys use. Everything else on this deck is something you talk
+      // to; this is the one thing you want done while your hands are somewhere
+      // else, so it is one key and it works whether or not a take is loaded.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.code === "KeyE") {
+        e.preventDefault();
+        reset();
+        setDemo("reel");
+        setTimeout(() => sendRef.current(scriptById("reel").prompt), 120);
+        return;
+      }
+
       if (!demo) return;
       const chord = (e.metaKey || e.ctrlKey) && e.altKey && e.shiftKey;
       if (!chord) return;

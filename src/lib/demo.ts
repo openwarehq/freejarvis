@@ -26,6 +26,17 @@ export type DemoStep =
       args: Record<string, unknown>;
       runMs?: number;
       output?: string;
+      /**
+       * Run the real tool and stream what it really returned.
+       *
+       * The rest of a script is a tape because a free-tier model is slow and
+       * occasionally empty, and neither belongs in take nine. But a step whose
+       * whole point is that it *did the thing* cannot be a tape — a reel take
+       * that narrates an upload without uploading is not a demo of anything.
+       * So this one step comes off the tape: the tool runs, the deck waits for
+       * it, and the line the agent reads back is the line the tool produced.
+       */
+      live?: boolean;
     }
   | { kind: "pause"; ms: number };
 
@@ -48,6 +59,30 @@ export type DemoScript = {
 export const PLACEHOLDER = /\{(tools|memories|jobs|sessions|sites|voice)\}/g;
 
 export const SCRIPTS: DemoScript[] = [
+  {
+    id: "reel",
+    label: "Post a reel",
+    // The one take that starts without a word being said. ⌘⇧E on the deck runs
+    // it, because the whole point of this script is the thing you want done
+    // while you are busy filming something else.
+    prompt: "Send the next one out.",
+    steps: [
+      { kind: "pause", ms: 150 },
+      { kind: "say", text: "On it." },
+      { kind: "say", text: "Taking the oldest clip in the folder that has not gone yet." },
+      {
+        kind: "tool",
+        name: "post_reel",
+        args: {},
+        // Live. A reel take that narrates an upload without uploading is not a
+        // demo of anything — this step really opens the browser, really
+        // attaches the file, and really stops at Share.
+        live: true,
+      },
+      { kind: "say", text: "It is filled in and waiting — Share is the only thing left, and I have not touched it." },
+    ],
+  },
+
   {
     id: "yacht",
     label: "Yacht listing",

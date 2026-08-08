@@ -8,8 +8,11 @@ next-env.d.ts
 # Runtime state — your sessions, memory, jobs, identity and workspace.
 # SOUL.md is written from the shipped default on first boot and is yours to
 # edit after that, so it is state, not source.
-data/*.db
-data/*.db-shm
-data/*.db-wal
-data/SOUL.md
-data/workspace
+# Everything in data/ is state, and none of it belongs in the repository.
+#
+# Listing the state files one by one is how a browser profile — Cookies,
+# Login Data, Session Storage — ended up staged for a public repo the first
+# time a tool put one here. An allowlist cannot be outgrown by the next thing
+# that writes to data/; a denylist is outgrown by definition.
+data/*
+!data/.gitkeep

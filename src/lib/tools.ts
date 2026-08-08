@@ -7,6 +7,9 @@ import { addMemory, createJob, listMemories, searchMemories } from "./db";
 import type { ToolDef } from "./llm";
 import { isValidCron } from "./cron";
 import { listSites, resolveSite, SITES_DIR } from "./sites";
+import { caption as writeCaption, clock, DROP, next as nextReel, probe, REELS_HOME, size } from "./reels";
+import { ensureChrome, focus, loggedInHint, upload } from "./uploader";
+import { openTab, Session } from "./cdp";
 
 const exec = promisify(execFile);
 
@@ -295,6 +298,60 @@ export function builtinTools(): Tool[] {
       },
     });
   }
+
+  tools.push({
+    name: "post_reel",
+    description:
+      `Take the oldest video in the reel folder that has not gone out yet, write a caption for it, ` +
+      `open the browser and carry it through Instagram's uploader. ` +
+      `It fills everything in and stops with Share unpressed — it never posts. ` +
+      `Use it when the owner asks to post, upload, or send out the next reel or clip. Folder: ${DROP}`,
+    parameters: { type: "object", properties: {}, required: [] },
+    // Not gated, and that is the whole design rather than an oversight. The
+    // approval card exists for acts that reach the outside world, and this one
+    // deliberately stops short of it: it fills in a draft and leaves the Share
+    // button alone. The gate is the button, and the button is a human's.
+    gated: false,
+    run: async () => {
+      const pick = await nextReel();
+      if (!pick.ok) return pick.why;
+
+      const p = await probe(pick.file);
+      const cap = await writeCaption(p);
+
+      let chrome;
+      try {
+        chrome = await ensureChrome();
+      } catch (e) {
+        return `${(e as Error).message}`;
+      }
+      await focus();
+
+      const tab = await openTab(chrome.port, "about:blank");
+      if (!tab.webSocketDebuggerUrl) return "Chrome opened a tab I could not attach to.";
+      const session = await Session.attach(tab.webSocketDebuggerUrl);
+
+      try {
+        await upload(session, { file: pick.file, caption: cap.text, share: false });
+      } catch (e) {
+        const why = (e as Error).message;
+        return /not logged in/.test(why)
+          ? `${why}. ${loggedInHint()}`
+          : `I got as far as the uploader and stopped: ${why}`;
+      } finally {
+        session.close();
+      }
+
+      const detail = [clock(p.seconds), size(p.bytes), p.shape, p.cuts ? `${p.cuts} cuts` : null]
+        .filter(Boolean)
+        .join(", ");
+      return (
+        `${pick.name} is loaded and captioned — ${detail}. ` +
+        `The caption ${cap.by === "claude" ? "is written" : "is off the measurements"}. ` +
+        `Share is the only thing left, and I have not touched it.`
+      );
+    },
+  });
 
   if (SHELL_ENABLED) {
     tools.push({
