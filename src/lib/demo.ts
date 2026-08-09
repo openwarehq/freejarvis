@@ -69,18 +69,16 @@ export const SCRIPTS: DemoScript[] = [
     steps: [
       { kind: "pause", ms: 150 },
       { kind: "say", text: "Afternoon sir — how are you doing?" },
-      { kind: "say", text: "All quiet here. {tools} online, {jobs} armed." },
-      { kind: "say", text: "Go on then — I'll post that video you wanted, and I'll draft up a description for it." },
-      // Sized to the first two lines, not the third, and that is the whole
-      // trick to it running seamlessly.
+      { kind: "say", text: "I'll post that video for you now." },
+      // Nothing opens until he has stopped talking.
       //
-      // The script streams as fast as it renders while the *client* paces the
-      // speech, so a live step fires on the server clock. Waiting for all three
-      // lines leaves a silence between the last word and the browser opening —
-      // the pause becomes dead air. Waiting for two means the browser comes up
-      // underneath the third line, while he is still saying he will do it,
-      // which is what you would want a person to do.
-      { kind: "pause", ms: 6800 },
+      // The script streams as fast as it renders while the client paces the
+      // speech, so a live step runs on the server clock and would otherwise
+      // fire under the narration. This waits out both lines at this voice's
+      // rate — an estimate, and deliberately a generous one, because a browser
+      // arriving a beat late reads as him going to do it, and a beat early
+      // reads as a bug.
+      { kind: "pause", ms: 8200 },
       {
         kind: "tool",
         name: "post_reel",
@@ -90,7 +88,7 @@ export const SCRIPTS: DemoScript[] = [
         // attaches the file, and really stops at Share.
         live: true,
       },
-      { kind: "say", text: "That's it sir — video's in, description drafted. Share is the only thing left, and I haven't touched it." },
+      { kind: "say", text: "Done sir — video's in and the description's drafted. Share is all that's left, and I haven't touched it." },
     ],
   },
 

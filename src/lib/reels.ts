@@ -468,6 +468,50 @@ export function measuredCaption(p: Probe): string {
   return title ? `${title}\n\n${sentence}` : sentence;
 }
 
+/**
+ * The caption, written by whichever model the deck is pointed at.
+ *
+ * Sent the measurements rather than the pictures, because most hosted models
+ * behind an OpenAI-shaped API are not vision models and a request full of
+ * base64 JPEGs to one of them is a 400 rather than a caption. So it is told
+ * what is known and told, in as many words, that it has not seen the video —
+ * which is the difference between a short honest caption and a confident
+ * paragraph about a sunset that is not there.
+ */
+async function captionViaBrain(p: Probe): Promise<Caption | null> {
+  const { resolveBrain } = await import("./config");
+  const { completeOnce } = await import("./llm");
+  const brain = resolveBrain();
+  if (brain.kind !== "direct" || !brain.apiKey) return null;
+
+  const facts = [
+    `Filename: ${p.name}`,
+    `Length: ${clock(p.seconds)}`,
+    `Shape: ${p.shape}`,
+    p.cuts !== null ? `Cuts: ${p.cuts}` : null,
+    p.hasAudio ? "Has sound" : "Silent",
+    `Shot: ${DAY[p.created.getDay()]}, ${hourPhrase(p.created)}`,
+  ].filter(Boolean).join("\n");
+
+  const text = await completeOnce(brain, [
+    {
+      role: "system",
+      content:
+        "You write Instagram captions. Two lines at most, lowercase, no emoji, no reach-bait. " +
+        "End with a blank line and two or three hashtags.\n\n" +
+        "You have NOT seen this video. You are given only what was measured about the file. " +
+        "Never describe what is in the frame, never name a place or a person, never invent an event. " +
+        "Write something true about the clip as an object — its length, when it was made, what the " +
+        "filename suggests the owner called it — and let that be enough. Short and true beats long and wrong.",
+    },
+    { role: "user", content: `${facts}\n\nWrite the caption.` },
+  ]);
+
+  const cleaned = text.trim().replace(/^["']|["']$/g, "");
+  if (!cleaned || cleaned.length > 600) return null;
+  return { text: cleaned, by: "claude", model: brain.model };
+}
+
 // ── the caption Claude writes ───────────────────────────────────────────────
 
 const SYSTEM = `You write Instagram captions for someone who does not want to write them.
@@ -576,10 +620,17 @@ export async function caption(p: Probe, opts: { force?: "measured" } = {}): Prom
   // write while you are exporting anyway.
   const written = sidecar(p.file);
   if (written) return { text: written, by: "written" };
+  if (opts.force === "measured") return { text: measuredCaption(p), by: "measured" };
 
-  if (opts.force === "measured" || !hasKey()) {
-    return { text: measuredCaption(p), by: "measured" };
-  }
+  // Whatever brain the deck is already configured with, before reaching for a
+  // key of its own. freejarvis is an agent app: if it can think at all, it can
+  // write a caption, and asking the owner to configure a second provider for
+  // one sentence is the kind of thing that means the sentence never gets
+  // written.
+  const viaDeck = await captionViaBrain(p).catch(() => null);
+  if (viaDeck) return viaDeck;
+
+  if (!hasKey()) return { text: measuredCaption(p), by: "measured" };
   const shots = await frames(p, 4);
   try {
     if (!shots.files.length) return { text: measuredCaption(p), by: "measured" };
