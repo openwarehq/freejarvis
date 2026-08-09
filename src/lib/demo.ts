@@ -68,17 +68,20 @@ export const SCRIPTS: DemoScript[] = [
     prompt: "Send the next one out.",
     steps: [
       { kind: "pause", ms: 150 },
-      { kind: "say", text: "Afternoon sir — how are you doing?" },
-      { kind: "say", text: "I'll post that video for you now." },
-      // Nothing opens until he has stopped talking.
+      { kind: "say", text: "Afternoon sir." },
+      { kind: "say", text: "I'll take the newest clip in the folder and put it up for you." },
+      { kind: "say", text: "I'll draft a description for it on the way through." },
+      // The pause is not a gap — it is him talking.
       //
       // The script streams as fast as it renders while the client paces the
-      // speech, so a live step runs on the server clock and would otherwise
-      // fire under the narration. This waits out both lines at this voice's
-      // rate — an estimate, and deliberately a generous one, because a browser
-      // arriving a beat late reads as him going to do it, and a beat early
-      // reads as a bug.
-      { kind: "pause", ms: 8200 },
+      // speech, so this is the server waiting for the voice to catch up. Set
+      // shorter than the narration and the browser opens over him; set longer
+      // and the difference is silence. Set to the narration itself and he talks
+      // continuously, then the browser arrives on his last word.
+      //
+      // Roughly 126 characters at about fourteen a second, plus the gaps
+      // between clips. Add a line here and this goes up with it.
+      { kind: "pause", ms: 9600 },
       {
         kind: "tool",
         name: "post_reel",
@@ -88,7 +91,8 @@ export const SCRIPTS: DemoScript[] = [
         // attaches the file, and really stops at Share.
         live: true,
       },
-      { kind: "say", text: "Done sir — video's in and the description's drafted. Share is all that's left, and I haven't touched it." },
+      { kind: "say", text: "That's it — video's in, description drafted." },
+      { kind: "say", text: "Share is all that's left, and I haven't touched it." },
     ],
   },
 
