@@ -237,13 +237,38 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   await s.until<boolean>(`document.readyState === 'complete'`, { timeoutMs: 30_000 });
   await sleep(1200);
 
-  const loggedOut = await s.eval<boolean>(
-    `Boolean(document.querySelector('input[name="username"]')) ||
-     /\\/accounts\\/login/.test(location.pathname)`,
-  );
-  if (loggedOut) {
+  // Asking "is this the login page?" is the wrong question, and asking it cost
+  // a confusing failure three steps later. A half-finished sign-in — a
+  // verification code, a suspicious-login challenge, a save-your-details
+  // interstitial — has no username field and is not /accounts/login, so it
+  // sailed through and then died on a missing file input.
+  //
+  // Nor can the session cookie be checked from here: `sessionid` is HttpOnly
+  // by design, so `document.cookie` never contains it however logged in you
+  // are. A check written against it can only ever be false.
+  //
+  // So the question is "is the app usable?", and the answer is whether its own
+  // navigation rendered.
+  const state = await s.until<string>(`(() => {
+    const p = location.pathname;
+    if (/^\\/(accounts\\/(login|signup|emailsignup)|auth_platform|challenge|two_factor)/.test(p)) return 'auth';
+    if (document.querySelector('input[name="username"]')) return 'auth';
+    const nav = [...document.querySelectorAll('a,[role="link"],[role="button"],svg[aria-label]')]
+      .some(n => /^(Home|Search|Create|Explore|Reels|Profile)$/i.test(
+        ((n.getAttribute && n.getAttribute('aria-label')) || n.innerText || '').trim()
+      ));
+    return nav ? 'ok' : '';
+  })()`, { timeoutMs: 25_000 }).catch(() => "unknown");
+
+  if (state !== "ok") {
     say({ t: "logged-out" });
-    throw new CdpError("not logged in to Instagram in the freejarvis browser profile");
+    const where = await s.eval<string>("location.pathname").catch(() => "");
+    throw new CdpError(
+      state === "auth"
+        ? `Instagram has not finished signing you in — it is on ${where}, asking for a verification code or a confirmation. ` +
+          `Finish it in the browser window that is already open, get to your feed, then press the key again.`
+        : `Instagram loaded but its navigation never appeared (${where || "unknown page"}), so I could not tell whether you are signed in.`,
+    );
   }
 
   // ── create ──────────────────────────────────────────────────────────────
