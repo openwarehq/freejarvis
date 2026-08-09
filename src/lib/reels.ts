@@ -346,7 +346,7 @@ export async function next(dir = DROP): Promise<Pick> {
 
 export type Caption = {
   text: string;
-  by: "claude" | "measured";
+  by: "claude" | "measured" | "written";
   model?: string;
   tokens?: number;
 };
@@ -361,6 +361,26 @@ export const CAPTION_MODEL = process.env.REELS_MODEL || "claude-sonnet-5";
 
 export function hasKey(): boolean {
   return Boolean((process.env.ANTHROPIC_API_KEY ?? "").trim());
+}
+
+/**
+ * A caption written by hand, beside the clip.
+ *
+ * `clip.mov.txt` first, then `clip.txt` — the first because it is unambiguous
+ * next to a folder of clips, the second because it is what people actually
+ * type.
+ */
+export function sidecar(file: string): string | null {
+  const stem = file.replace(/\.[^.]+$/, "");
+  for (const candidate of [`${file}.txt`, `${stem}.txt`]) {
+    try {
+      const text = fs.readFileSync(candidate, "utf8").trim();
+      if (text) return text;
+    } catch {
+      /* not there */
+    }
+  }
+  return null;
 }
 
 // ── the measured caption ────────────────────────────────────────────────────
@@ -404,24 +424,48 @@ function hourPhrase(d: Date): string {
 
 const DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+const SPELLED = [
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+  "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+  "seventeen", "eighteen", "nineteen", "twenty",
+];
+
+/** "Nine seconds", "Just over a minute" — a length, said rather than printed. */
+function spokenLength(seconds: number): string {
+  const s = Math.round(seconds);
+  if (s <= 20) return `${SPELLED[s][0].toUpperCase()}${SPELLED[s].slice(1)} seconds`;
+  if (s < 60) return `${s} seconds`;
+  if (s < 90) return "About a minute";
+  const m = Math.round(s / 60);
+  return `About ${SPELLED[m] ?? m} minutes`;
+}
+
+/**
+ * The caption when nothing has watched the video.
+ *
+ * It used to print a readout — "0:10 · 1270×914" — which is a true sentence
+ * nobody would ever caption a post with. Pixel dimensions belong in the build
+ * log, not under a video.
+ *
+ * So it says the two things a person actually would: how long it is, and when
+ * it was shot. Both measured, neither invented. What it will never do is
+ * describe what is *in* the clip, because it has not seen it — that is what the
+ * sidecar file is for, and what a key would buy.
+ */
 export function measuredCaption(p: Probe): string {
   const title = titleFrom(p.name);
-  const lines: string[] = [];
 
-  lines.push(title ?? `${clock(p.seconds)} of ${p.shape} footage.`);
+  const clause = [
+    spokenLength(p.seconds).toLowerCase(),
+    p.cuts !== null && p.cuts > 3 ? `${p.cuts} cuts` : null,
+    !p.hasAudio ? "no sound" : null,
+  ].filter(Boolean) as string[];
 
-  // Only facts. Every clause below came out of ffprobe.
-  const facts: string[] = [];
-  facts.push(`${clock(p.seconds)}`);
-  if (p.cuts !== null && p.cuts > 0) facts.push(`${p.cuts} cut${p.cuts === 1 ? "" : "s"}`);
-  facts.push(`${p.width}×${p.height}`);
-  if (p.fps >= 50) facts.push(`${Math.round(p.fps)}fps`);
-  if (!p.hasAudio) facts.push("no sound");
-  lines.push(facts.join(" · "));
+  const when = `shot ${hourPhrase(p.created)} on a ${DAY[p.created.getDay()]}`;
+  const line = `${clause.join(", ")}, ${when}.`;
+  const sentence = line[0].toUpperCase() + line.slice(1);
 
-  lines.push(`Shot on a ${DAY[p.created.getDay()]}, ${hourPhrase(p.created)}.`);
-
-  return lines.join("\n\n");
+  return title ? `${title}\n\n${sentence}` : sentence;
 }
 
 // ── the caption Claude writes ───────────────────────────────────────────────
@@ -525,6 +569,14 @@ export function price(model: string, inTok: number, outTok: number): number | nu
  * press anything.
  */
 export async function caption(p: Probe, opts: { force?: "measured" } = {}): Promise<Caption> {
+  // Your own words win over everything. Drop `clip.mov.txt` next to `clip.mov`
+  // and that file is the caption, verbatim — no model, no measuring, no
+  // guessing at a video nothing has watched. It is the only way to get a
+  // caption that is actually about the thing, and it takes ten seconds to
+  // write while you are exporting anyway.
+  const written = sidecar(p.file);
+  if (written) return { text: written, by: "written" };
+
   if (opts.force === "measured" || !hasKey()) {
     return { text: measuredCaption(p), by: "measured" };
   }

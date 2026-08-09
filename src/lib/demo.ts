@@ -69,18 +69,18 @@ export const SCRIPTS: DemoScript[] = [
     steps: [
       { kind: "pause", ms: 150 },
       { kind: "say", text: "Afternoon sir — how are you doing?" },
-      { kind: "say", text: "Everything's quiet on my end. {tools} online, {jobs} armed." },
-      { kind: "pause", ms: 400 },
-      { kind: "say", text: "Got it sir — I'll post this video now." },
-      // The script streams as fast as it renders and the *client* paces the
-      // speech, so without this the browser opened while the voice was still
-      // on "Afternoon sir". A live step is the one thing the server does in
-      // real time, so it is the one place the tape has to wait for the talking.
+      { kind: "say", text: "All quiet here. {tools} online, {jobs} armed." },
+      { kind: "say", text: "Go on then — I'll post that video you wanted, and I'll draft up a description for it." },
+      // Sized to the first two lines, not the third, and that is the whole
+      // trick to it running seamlessly.
       //
-      // Sized to the three lines above at this voice's rate. It is an estimate
-      // and it is allowed to be: a second early is a beat, a second late is a
-      // pause, and neither is the browser appearing over the first sentence.
-      { kind: "pause", ms: 10_500 },
+      // The script streams as fast as it renders while the *client* paces the
+      // speech, so a live step fires on the server clock. Waiting for all three
+      // lines leaves a silence between the last word and the browser opening —
+      // the pause becomes dead air. Waiting for two means the browser comes up
+      // underneath the third line, while he is still saying he will do it,
+      // which is what you would want a person to do.
+      { kind: "pause", ms: 6800 },
       {
         kind: "tool",
         name: "post_reel",
@@ -90,7 +90,7 @@ export const SCRIPTS: DemoScript[] = [
         // attaches the file, and really stops at Share.
         live: true,
       },
-      { kind: "say", text: "Done sir — it's filled in and waiting. Share is the only thing left, and I haven't touched it." },
+      { kind: "say", text: "That's it sir — video's in, description drafted. Share is the only thing left, and I haven't touched it." },
     ],
   },
 
