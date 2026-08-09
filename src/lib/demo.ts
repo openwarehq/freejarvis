@@ -72,6 +72,15 @@ export const SCRIPTS: DemoScript[] = [
       { kind: "say", text: "Everything's quiet on my end. {tools} online, {jobs} armed." },
       { kind: "pause", ms: 400 },
       { kind: "say", text: "Got it sir — I'll post this video now." },
+      // The script streams as fast as it renders and the *client* paces the
+      // speech, so without this the browser opened while the voice was still
+      // on "Afternoon sir". A live step is the one thing the server does in
+      // real time, so it is the one place the tape has to wait for the talking.
+      //
+      // Sized to the three lines above at this voice's rate. It is an estimate
+      // and it is allowed to be: a second early is a beat, a second late is a
+      // pause, and neither is the browser appearing over the first sentence.
+      { kind: "pause", ms: 10_500 },
       {
         kind: "tool",
         name: "post_reel",

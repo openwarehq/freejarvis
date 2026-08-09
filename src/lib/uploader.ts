@@ -311,8 +311,8 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   await s.send("Page.navigate", { url: opts.origin ?? "https://www.instagram.com/" });
   await s.waitFor("Page.loadEventFired", 45_000).catch(() => {});
   // The shell loads long before the app renders anything clickable.
-  await s.until<boolean>(`document.readyState === 'complete'`, { timeoutMs: 30_000 });
-  await sleep(1200);
+  await s.until<boolean>(`document.readyState === 'complete'`, { timeoutMs: 30_000, every: 150 });
+  await sleep(400);
 
   // Asking "is this the login page?" is the wrong question, and asking it cost
   // a confusing failure three steps later. A half-finished sign-in — a
@@ -387,7 +387,7 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   // own, there is nothing to choose.
   const fileInput = `Boolean(document.querySelector('input[type=file]'))`;
   if (!(await s.eval<boolean>(fileInput).catch(() => false))) {
-    await sleep(1200);
+    await sleep(350);
     if (!(await s.eval<boolean>(fileInput).catch(() => false))) {
       const chose =
         (await s.eval<boolean>(clickIt("Post"))) ||
@@ -400,7 +400,7 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   say({ t: "picking", file: opts.file });
   // The dialog renders an <input type=file> whether or not the picker is open.
   // Waiting for it is waiting for the dialog.
-  await s.until<boolean>(fileInput, { timeoutMs: 25_000 });
+  await s.until<boolean>(fileInput, { timeoutMs: 25_000, every: 150 });
 
   const { root } = await s.send<{ root: { nodeId: number } }>("DOM.getDocument", { depth: -1 });
   const { nodeId } = await s.send<{ nodeId: number }>("DOM.querySelector", {
@@ -431,12 +431,15 @@ export async function upload(s: Session, opts: Options): Promise<void> {
     if (await s.eval<boolean>(clickIt("Next")).catch(() => false)) {
       advanced++;
       say({ t: "advanced", label: "Next", step: advanced });
-      // Long enough for the next screen to mount before it is inspected, and
-      // short enough that a stuck screen is retried rather than waited out.
-      await sleep(1800);
+      // Just enough for the click to take effect, then straight back to
+      // polling. A flat 1.8s here was most of the fifteen seconds this used to
+      // take: two screens spent three and a half seconds asleep for no reason,
+      // because the next screen is usually up in a couple of hundred
+      // milliseconds and the loop was not looking.
+      await sleep(350);
       continue;
     }
-    await sleep(900);
+    await sleep(200);
   }
 
   if (!(await s.eval<boolean>(CAPTION_BOX_EXISTS).catch(() => false))) {
@@ -451,7 +454,7 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   // caption box was reached a beat too early and the run died saying it did
   // not exist — while a look at the page a second later found it perfectly.
   // Wait for the thing about to be used.
-  await s.until<boolean>(CAPTION_BOX_EXISTS, { timeoutMs: 40_000 });
+  await s.until<boolean>(CAPTION_BOX_EXISTS, { timeoutMs: 40_000, every: 150 });
   await writeCaption(s, opts.caption);
   say({ t: "caption", chars: opts.caption.length });
 
@@ -491,7 +494,7 @@ async function writeCaption(s: Session, text: string): Promise<void> {
   // Through the input pipeline, one insertText, so React's onChange fires once
   // with the whole string rather than 400 times.
   await s.send("Input.insertText", { text });
-  await sleep(400);
+  await sleep(200);
 
   const got = await s.eval<number>(`(() => {
     const box = ${CAPTION_SELECTOR};
@@ -505,7 +508,7 @@ async function dismiss(s: Session, labels: string[]): Promise<void> {
   for (const label of labels) {
     if (await s.eval<boolean>(exists(label)).catch(() => false)) {
       await s.eval(clickIt(label)).catch(() => {});
-      await sleep(700);
+      await sleep(300);
     }
   }
 }

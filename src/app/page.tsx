@@ -88,10 +88,12 @@ export default function Deck() {
     endpoint: demo ? "/api/demo" : undefined,
     extra: demo ? { script: demo } : undefined,
     onTool: useCallback((name: string, args: string) => {
-      if (name === "post_reel") {
-        setReel(true);
-        return;
-      }
+      // The mirrored browser panel is built and works — /api/reel streams it and
+      // <ReelView> renders it — but it does not open itself. It was asked for
+      // and then unasked for, and an extra window appearing bottom-right in the
+      // middle of a take is the sort of thing you only notice in the edit.
+      // Press ⌘⇧M to bring it up.
+      if (name === "post_reel") return;
       if (name === "open_site") {
         let site: string | null = null;
         try {
@@ -189,6 +191,14 @@ export default function Deck() {
       // filming keys use. Everything else on this deck is something you talk
       // to; this is the one thing you want done while your hands are somewhere
       // else, so it is one key and it works whether or not a take is loaded.
+      // ⌘⇧M — mirror the reel browser onto the deck, for when you want to see
+      // what it is doing without going to find the window.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.code === "KeyM") {
+        e.preventDefault();
+        setReel((v) => !v);
+        return;
+      }
+
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.code === "KeyE") {
         e.preventDefault();
         reset();
