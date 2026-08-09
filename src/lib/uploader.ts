@@ -202,14 +202,43 @@ export type Options = {
  */
 const clickable = (text: string) => `(() => {
   const want = ${JSON.stringify(text)}.toLowerCase();
-  const nodes = [...document.querySelectorAll('button,[role="button"],a,div[tabindex]')];
-  const hit = nodes.find(n => {
-    const t = (n.innerText || n.textContent || '').trim().toLowerCase();
-    if (t !== want) return false;
+
+  // Exact text equality was wrong, and Instagram's own sidebar is the proof:
+  // the Create control renders as an icon labelled "New post" wrapped around a
+  // span reading "Create", so its innerText is the concatenation
+  // "New postCreate" — which equals neither. The whole nav is like this:
+  // "HomeHome", "ReelsReels", "SearchSearch", "SettingsMore".
+  //
+  // So a control matches if any of the strings it presents — its text, its
+  // aria-label, its title — is the label, starts with it, or ends with it.
+  // Prefix and suffix are safe here in a way they would not be on the page at
+  // large, because only controls are searched and only short ones: a paragraph
+  // containing the word "Next" is never a candidate.
+  const names = (n) => [
+    n.innerText || n.textContent || '',
+    n.getAttribute && n.getAttribute('aria-label') || '',
+    n.getAttribute && n.getAttribute('title') || '',
+  ].map(x => x.replace(/\\s+/g, ' ').trim().toLowerCase()).filter(x => x && x.length <= 40);
+
+  const shown = (n) => {
     const r = n.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(n).visibility !== 'hidden';
-  });
-  return hit || null;
+  };
+
+  const nodes = [...document.querySelectorAll('button,[role="button"],a,div[tabindex],[role="menuitem"]')]
+    .filter(shown);
+
+  // Exact first, everywhere, before falling back to the looser rounds — an
+  // exact "Next" further down the page beats a prefix match on something else.
+  for (const test of [
+    (c) => c === want,
+    (c) => c.endsWith(want),
+    (c) => c.startsWith(want),
+  ]) {
+    const hit = nodes.find(n => names(n).some(test));
+    if (hit) return hit;
+  }
+  return null;
 })()`;
 
 const clickIt = (text: string) => `(() => {
@@ -221,6 +250,29 @@ const clickIt = (text: string) => `(() => {
 })()`;
 
 const exists = (text: string) => `Boolean(${clickable(text)})`;
+
+/**
+ * The composer, however Instagram has it labelled today — and only if it is
+ * actually on screen.
+ *
+ * Existence is not enough, and the fixture caught it: a caption box that is
+ * mounted but hidden behind the crop screen answers `querySelector` perfectly
+ * well. The loop that drives towards the composer then thinks it has arrived
+ * before pressing Next at all, and types the caption into something nobody can
+ * see. Visibility is the property that was actually meant.
+ */
+const CAPTION_SELECTOR = `(() => {
+  const seen = (n) => {
+    if (!n) return null;
+    const r = n.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && getComputedStyle(n).visibility !== 'hidden' ? n : null;
+  };
+  return seen(document.querySelector('div[contenteditable="true"][role="textbox"]'))
+      || [...document.querySelectorAll('div[contenteditable="true"]')].map(seen).find(Boolean)
+      || [...document.querySelectorAll('textarea[aria-label*="aption" i]')].map(seen).find(Boolean)
+      || null;
+})()`;
+const CAPTION_BOX_EXISTS = `Boolean(${CAPTION_SELECTOR})`;
 
 export async function upload(s: Session, opts: Options): Promise<void> {
   const say = opts.onStep ?? (() => {});
@@ -271,6 +323,23 @@ export async function upload(s: Session, opts: Options): Promise<void> {
     );
   }
 
+  // ── clear whatever is already on screen ─────────────────────────────────
+  // Two things sit in front of the app and neither is an error:
+  //
+  // "Save your login info?" and "Turn on notifications" are shown on a fresh
+  // session, and they swallow the click meant for Create.
+  //
+  // And a previous run that stopped at Share leaves the composer open. Opening
+  // Create again then raises "Discard post?", which is a dialog about the old
+  // attempt appearing in the middle of the new one. It has to be answered
+  // before anything else, and the answer is yes — the clip is still in the
+  // queue, because nothing is recorded as flown until it is actually posted.
+  await dismiss(s, ["Not now", "Not Now", "Not now, thanks", "Cancel", "Dismiss"]);
+  if (await s.eval<boolean>(exists("Discard")).catch(() => false)) {
+    await s.eval(clickIt("Discard"));
+    await sleep(900);
+  }
+
   // ── create ──────────────────────────────────────────────────────────────
   say({ t: "create" });
   // "Create" is a nav item on desktop; on a narrow window it collapses into
@@ -286,13 +355,27 @@ export async function upload(s: Session, opts: Options): Promise<void> {
     );
   }
 
+  // ── Create is a menu, not a button ──────────────────────────────────────
+  // It opens "Post", "Live video", "Ad" rather than the uploader itself. That
+  // second click is skipped rather than assumed, because the menu has not
+  // always been there and may not always be: if the file input turns up on its
+  // own, there is nothing to choose.
+  const fileInput = `Boolean(document.querySelector('input[type=file]'))`;
+  if (!(await s.eval<boolean>(fileInput).catch(() => false))) {
+    await sleep(1200);
+    if (!(await s.eval<boolean>(fileInput).catch(() => false))) {
+      const chose =
+        (await s.eval<boolean>(clickIt("Post"))) ||
+        (await s.eval<boolean>(clickIt("Post to feed")));
+      if (chose) say({ t: "advanced", label: "Post", step: 0 });
+    }
+  }
+
   // ── attach the file ─────────────────────────────────────────────────────
   say({ t: "picking", file: opts.file });
   // The dialog renders an <input type=file> whether or not the picker is open.
   // Waiting for it is waiting for the dialog.
-  await s.until<boolean>(`Boolean(document.querySelector('input[type=file]'))`, {
-    timeoutMs: 25_000,
-  });
+  await s.until<boolean>(fileInput, { timeoutMs: 25_000 });
 
   const { root } = await s.send<{ root: { nodeId: number } }>("DOM.getDocument", { depth: -1 });
   const { nodeId } = await s.send<{ nodeId: number }>("DOM.querySelector", {
@@ -305,20 +388,45 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   say({ t: "attached" });
 
   // ── through the crop and filter screens ─────────────────────────────────
-  // Two "Next" screens today. Looping rather than hard-coding two means a third
-  // screen appearing does not break it, and a flow that only has one still ends.
+  //
+  // Two "Next" screens today, and the naive version — click Next, wait, click
+  // Next — does not survive a video. Instagram is still ingesting the file
+  // while the crop screen is up, so the button is there but inert: the click
+  // lands, nothing advances, and the run sails on to a composer that has not
+  // been reached.
+  //
+  // So this does not count screens. It drives towards the composer and keeps
+  // pressing Next until it arrives, which self-corrects whether the button was
+  // not ready, the screen took four seconds, or Instagram adds a third step.
   let advanced = 0;
-  for (let i = 0; i < 4; i++) {
-    const there = await waitForEither(s, ["Next", "Share"], 40_000);
-    if (there === "Share") break;
-    await s.eval(clickIt("Next"));
-    advanced++;
-    say({ t: "advanced", label: "Next", step: advanced });
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    if (await s.eval<boolean>(CAPTION_BOX_EXISTS).catch(() => false)) break;
+
+    if (await s.eval<boolean>(clickIt("Next")).catch(() => false)) {
+      advanced++;
+      say({ t: "advanced", label: "Next", step: advanced });
+      // Long enough for the next screen to mount before it is inspected, and
+      // short enough that a stuck screen is retried rather than waited out.
+      await sleep(1800);
+      continue;
+    }
     await sleep(900);
   }
 
+  if (!(await s.eval<boolean>(CAPTION_BOX_EXISTS).catch(() => false))) {
+    throw new CdpError(
+      `pressed Next ${advanced} time${advanced === 1 ? "" : "s"} but the caption screen never arrived — ` +
+        `the video may still be processing, or the flow has changed`,
+    );
+  }
+
   // ── the caption ─────────────────────────────────────────────────────────
-  await s.until<boolean>(exists("Share"), { timeoutMs: 40_000 });
+  // Waiting for Share was wrong: it renders before the composer mounts, so the
+  // caption box was reached a beat too early and the run died saying it did
+  // not exist — while a look at the page a second later found it perfectly.
+  // Wait for the thing about to be used.
+  await s.until<boolean>(CAPTION_BOX_EXISTS, { timeoutMs: 40_000 });
   await writeCaption(s, opts.caption);
   say({ t: "caption", chars: opts.caption.length });
 
@@ -346,9 +454,7 @@ export async function upload(s: Session, opts: Options): Promise<void> {
  */
 async function writeCaption(s: Session, text: string): Promise<void> {
   const focused = await s.eval<boolean>(`(() => {
-    const box = document.querySelector('div[contenteditable="true"][role="textbox"]')
-             || document.querySelector('div[contenteditable="true"]')
-             || document.querySelector('textarea[aria-label*="aption" i]');
+    const box = ${CAPTION_SELECTOR};
     if (!box) return false;
     box.focus();
     return true;
@@ -361,12 +467,20 @@ async function writeCaption(s: Session, text: string): Promise<void> {
   await sleep(400);
 
   const got = await s.eval<number>(`(() => {
-    const box = document.querySelector('div[contenteditable="true"][role="textbox"]')
-             || document.querySelector('div[contenteditable="true"]')
-             || document.querySelector('textarea[aria-label*="aption" i]');
+    const box = ${CAPTION_SELECTOR};
     return box ? (box.innerText || box.value || '').trim().length : 0;
   })()`);
   if (got === 0) throw new CdpError("the caption box stayed empty after typing");
+}
+
+/** Clicks away anything in the list that happens to be on screen. */
+async function dismiss(s: Session, labels: string[]): Promise<void> {
+  for (const label of labels) {
+    if (await s.eval<boolean>(exists(label)).catch(() => false)) {
+      await s.eval(clickIt(label)).catch(() => {});
+      await sleep(700);
+    }
+  }
 }
 
 /** Waits until one of several labels is on screen, and says which. */

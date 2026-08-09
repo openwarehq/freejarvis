@@ -68,6 +68,9 @@ export const SCRIPTS: DemoScript[] = [
     prompt: "Send the next one out.",
     steps: [
       { kind: "pause", ms: 150 },
+      { kind: "say", text: "Afternoon sir — how are you doing?" },
+      { kind: "say", text: "Everything's quiet on my end. {tools} online, {jobs} armed." },
+      { kind: "pause", ms: 400 },
       { kind: "say", text: "Got it sir — I'll post this video now." },
       {
         kind: "tool",
