@@ -12,6 +12,7 @@ import Icon from "@/components/Icon";
 import Orb from "@/components/Orb";
 import Rail, { type PanelId } from "@/components/Rail";
 import SiteView from "@/components/SiteView";
+import ReelView from "@/components/ReelView";
 import Telemetry from "@/components/Telemetry";
 import TopBar from "@/components/TopBar";
 import ApprovalsPanel from "@/components/panels/ApprovalsPanel";
@@ -49,6 +50,8 @@ const TOOL_PANEL: Record<string, PanelId> = {
 export default function Deck() {
   const [panel, setPanel] = useState<PanelId | null>(null);
   const [site, setSite] = useState<string | null>(null);
+  // The reel browser, mirrored onto the deck while post_reel runs.
+  const [reel, setReel] = useState(false);
   // A site opens windowed in the corner so the orb stays on screen next to
   // it; expanding is a deliberate click.
   const [siteFull, setSiteFull] = useState(false);
@@ -85,6 +88,10 @@ export default function Deck() {
     endpoint: demo ? "/api/demo" : undefined,
     extra: demo ? { script: demo } : undefined,
     onTool: useCallback((name: string, args: string) => {
+      if (name === "post_reel") {
+        setReel(true);
+        return;
+      }
       if (name === "open_site") {
         let site: string | null = null;
         try {
@@ -296,6 +303,15 @@ export default function Deck() {
               onToggleFull={() => setSiteFull((v) => !v)}
               onClose={() => setSite(null)}
             />
+          )}
+
+          {/* Windowed in the corner, like a site — the orb stays on screen
+              beside it, which is the whole reason the browser is mirrored here
+              instead of being brought to the front. */}
+          {reel && (
+            <div className="pointer-events-none absolute right-6 bottom-6 z-30 w-[min(46vw,620px)]">
+              <ReelView onClose={() => setReel(false)} />
+            </div>
           )}
 
           {/* Follow the voice when there is one — the text stream finishes

@@ -9,6 +9,7 @@ import { isValidCron } from "./cron";
 import { listSites, resolveSite, SITES_DIR } from "./sites";
 import { caption as writeCaption, clock, DROP, next as nextReel, probe, REELS_HOME, size } from "./reels";
 import { ensureChrome, loggedInHint, upload } from "./uploader";
+import { pushFrame, setLive } from "./screencast";
 import { openTab, Session } from "./cdp";
 
 const exec = promisify(execFile);
@@ -330,14 +331,21 @@ export function builtinTools(): Tool[] {
       if (!tab.webSocketDebuggerUrl) return "Chrome opened a tab I could not attach to.";
       const session = await Session.attach(tab.webSocketDebuggerUrl);
 
+      setLive(true);
       try {
-        await upload(session, { file: pick.file, caption: cap.text, share: false });
+        await upload(session, {
+          file: pick.file,
+          caption: cap.text,
+          share: false,
+          onFrame: pushFrame,
+        });
       } catch (e) {
         const why = (e as Error).message;
         return /not logged in/.test(why)
           ? `${why}. ${loggedInHint()}`
           : `I got as far as the uploader and stopped: ${why}`;
       } finally {
+        setLive(false);
         session.close();
       }
 

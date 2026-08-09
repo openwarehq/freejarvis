@@ -157,6 +157,15 @@ export class Session {
     });
   }
 
+  /** Subscribes to every occurrence of an event, not just the first. */
+  on(method: string, fn: (params: Record<string, unknown>) => void): () => void {
+    const listener = (m: string, p: Record<string, unknown>) => {
+      if (m === method) fn(p);
+    };
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
   close() {
     try {
       this.ws.close();

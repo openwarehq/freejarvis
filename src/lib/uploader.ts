@@ -190,6 +190,8 @@ export type Options = {
    */
   origin?: string;
   onStep?: (s: Step) => void;
+  /** Called with a base64 JPEG every time the page repaints. */
+  onFrame?: (data: string) => void;
 };
 
 /**
@@ -279,6 +281,30 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   await s.send("Page.enable");
   await s.send("Runtime.enable");
   await s.send("DOM.enable");
+
+  // The deck watches rather than embeds — Instagram refuses to be framed, and
+  // a screencast is the honest way to show a page that said no.
+  let castOn = false;
+  if (opts.onFrame) {
+    s.on("Page.screencastFrame", async (p: Record<string, unknown>) => {
+      const data = p.data as string | undefined;
+      const sessionId = p.sessionId as number | undefined;
+      if (data) opts.onFrame!(data);
+      // Unacknowledged frames stop the stream after a couple of seconds, so
+      // this is not optional bookkeeping — it is what keeps it running.
+      if (sessionId != null) await s.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
+    });
+    await s.send("Page.startScreencast", {
+      format: "jpeg",
+      quality: 62,
+      maxWidth: 1280,
+      maxHeight: 900,
+      everyNthFrame: 1,
+    }).then(() => { castOn = true; }).catch(() => {});
+  }
+  const stopCast = async () => {
+    if (castOn) await s.send("Page.stopScreencast").catch(() => {});
+  };
 
   // ── open ────────────────────────────────────────────────────────────────
   say({ t: "opening" });
@@ -432,6 +458,7 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   say({ t: "ready" });
 
   if (!opts.share) {
+    await stopCast();
     say({
       t: "stopped",
       why: "everything is filled in and Share has not been pressed. Press it yourself, or run again with --post.",
@@ -440,6 +467,7 @@ export async function upload(s: Session, opts: Options): Promise<void> {
   }
 
   await s.eval(clickIt("Share"));
+  await stopCast();
   say({ t: "shared" });
 }
 
