@@ -96,6 +96,27 @@ export async function ensureChrome(opts: { port?: number; headless?: boolean } =
   if (await portOpen(port)) return { started: false, port, profile: PROFILE };
 
   fs.mkdirSync(PROFILE, { recursive: true });
+
+  // The trap this catches, which cost twenty silent seconds every time:
+  //
+  // Chrome allows exactly one instance per profile directory. If a window is
+  // already open on this profile *without* the debugging flag — the obvious
+  // thing to have left open after logging in — the spawn below does not start
+  // a second browser. It hands the request to the running one, focuses its
+  // window, and exits, so the port never opens and the only symptom is a
+  // timeout that says nothing about why.
+  //
+  // Chrome marks a profile in use with a SingletonLock symlink. If that is
+  // there and the port is shut, the diagnosis is certain, so say it now rather
+  // than after a twenty-second wait.
+  if (fs.existsSync(path.join(PROFILE, "SingletonLock"))) {
+    throw new ChromeError(
+      "a Chrome window is already open on the reel profile without the debugging port, " +
+        "and Chrome allows only one at a time per profile. Quit that window and try again — " +
+        "or start it with `npm run reels:login`, which opens it with the port so it can be reused.",
+    );
+  }
+
   const bin = findChrome();
 
   const args = [
@@ -137,9 +158,11 @@ export async function focus(): Promise<void> {
 
 export function loggedInHint(): string {
   return (
-    `Open the hangar browser and log into Instagram once:\n\n` +
-    `  "${findChrome()}" --user-data-dir="${PROFILE}" https://www.instagram.com/\n\n` +
-    `The session stays in that profile. Nothing else on your machine is touched.`
+    `Log in once, in the reel browser:\n\n` +
+    `  npm run reels:login\n\n` +
+    `That opens Instagram in the profile at ${PROFILE}, with the debugging port ` +
+    `already on so the same window gets reused. Log in, then leave it open or close it — ` +
+    `either works. The session stays in that profile and nothing else on your machine is touched.`
   );
 }
 

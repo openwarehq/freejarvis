@@ -299,14 +299,28 @@ because a free-tier model is slow and occasionally empty, but a reel take that n
 upload without uploading is not a demo of anything. That one step really opens the browser,
 really attaches the file, and really stops at Share.
 
-### The browser
-
-Its own Chrome profile, at `data/reels/chrome`, which you log into Instagram in once:
+### Setting it up
 
 ```bash
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  --user-data-dir="$PWD/data/reels/chrome" https://www.instagram.com/
+brew install ffmpeg          # the measurements and the stills come from it
+npm run dev                  # the deck, on 4333
+npm run reels:login          # log into Instagram, once
+mkdir -p ~/Movies/Freejarvis # drop clips here
 ```
+
+Then ⌘⇧E.
+
+`reels:login` matters more than it looks. Chrome allows **one instance per
+profile**, so logging in with a plain `--user-data-dir` leaves a window holding
+the profile *without* the debugging port — and the next ⌘⇧E cannot start its own,
+so it waits twenty seconds and fails with nothing useful to say. Opening it with
+the port from the start means the window you logged in with is the window the
+deck drives. Nothing to quit, nothing to remember. If a portless window is
+holding the profile anyway, it now says so immediately instead of timing out.
+
+### The browser
+
+Its own Chrome profile, at `data/reels/chrome`.
 
 Not a workaround. Since Chrome 136 the remote-debugging port is refused outright on the default
 profile, because "any local process can drive the browser you are logged into everywhere" is a
