@@ -68,8 +68,7 @@ export const SCRIPTS: DemoScript[] = [
     prompt: "Send the next one out.",
     steps: [
       { kind: "pause", ms: 150 },
-      { kind: "say", text: "On it." },
-      { kind: "say", text: "Taking the oldest clip in the folder that has not gone yet." },
+      { kind: "say", text: "Got it sir — I'll post this video now." },
       {
         kind: "tool",
         name: "post_reel",
@@ -79,7 +78,7 @@ export const SCRIPTS: DemoScript[] = [
         // attaches the file, and really stops at Share.
         live: true,
       },
-      { kind: "say", text: "It is filled in and waiting — Share is the only thing left, and I have not touched it." },
+      { kind: "say", text: "Done sir — it's filled in and waiting. Share is the only thing left, and I haven't touched it." },
     ],
   },
 
