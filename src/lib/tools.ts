@@ -8,7 +8,7 @@ import type { ToolDef } from "./llm";
 import { isValidCron } from "./cron";
 import { listSites, resolveSite, SITES_DIR } from "./sites";
 import { caption as writeCaption, clock, DROP, next as nextReel, probe, REELS_HOME, size } from "./reels";
-import { ensureChrome, focus, loggedInHint, upload } from "./uploader";
+import { ensureChrome, loggedInHint, upload } from "./uploader";
 import { openTab, Session } from "./cdp";
 
 const exec = promisify(execFile);
@@ -325,7 +325,6 @@ export function builtinTools(): Tool[] {
       } catch (e) {
         return `${(e as Error).message}`;
       }
-      await focus();
 
       const tab = await openTab(chrome.port, "about:blank");
       if (!tab.webSocketDebuggerUrl) return "Chrome opened a tab I could not attach to.";

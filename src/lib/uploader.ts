@@ -28,17 +28,15 @@
  * because a script reached the end of a flow.
  */
 
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
-import { promisify } from "node:util";
 import type { Session } from "./cdp";
 import { CdpError } from "./cdp";
 import { REELS_HOME } from "./reels";
 
 
-const run = promisify(execFile);
 
 export const PROFILE = process.env.REELS_PROFILE || path.join(REELS_HOME, "chrome");
 export const CDP_PORT = Number(process.env.REELS_CDP_PORT || 9333);
@@ -144,17 +142,18 @@ export async function ensureChrome(opts: { port?: number; headless?: boolean } =
   );
 }
 
-/** Brings the window forward, so the click-through is something you can watch. */
-export async function focus(): Promise<void> {
-  try {
-    await run("osascript", [
-      "-e",
-      'tell application "System Events" to set frontmost of (first process whose name contains "Chrome") to true',
-    ]);
-  } catch {
-    // Not being able to raise the window is not a reason to stop.
-  }
-}
+/*
+ * There is deliberately no focus helper here any more.
+ *
+ * There was one, and it was wrong in a way that only shows up on camera: it
+ * raised Chrome through System Events, and the deck is *also* Chrome. So
+ * "bring the browser forward" grabbed the Chrome process and threw the
+ * operator off the window they were filming onto the reel window, mid-sentence,
+ * every run.
+ *
+ * The reel browser does its work wherever it is. A tool that takes the screen
+ * away from you while it runs is worse than one you have to go and look at.
+ */
 
 export function loggedInHint(): string {
   return (
