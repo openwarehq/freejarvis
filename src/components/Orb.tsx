@@ -31,13 +31,18 @@ type Props = {
 };
 
 const STATE: Record<DeckState, { hue: number; spin: number; amp: number; freq: number; density: number }> = {
-  idle: { hue: 190, spin: 0.055, amp: 0.035, freq: 2.2, density: 1 },
-  listening: { hue: 196, spin: 0.1, amp: 0.06, freq: 3.0, density: 1 },
-  thinking: { hue: 206, spin: 0.42, amp: 0.14, freq: 5.2, density: 1 },
-  speaking: { hue: 187, spin: 0.12, amp: 0.05, freq: 2.6, density: 1 },
-  // The only warm state. Blue reads, amber acts.
-  tool: { hue: 34, spin: 0.26, amp: 0.09, freq: 8.5, density: 1 },
-  "awaiting-approval": { hue: 6, spin: 0.02, amp: 0.02, freq: 1.6, density: 1 },
+  // Kept in step with the --h values in globals.css by hand. The orb paints to
+  // a canvas rather than reading custom properties, so these are the same
+  // palette written twice — change one and the deck goes two-tone, which is
+  // exactly what happened the first time this was rethemed.
+  idle: { hue: 356, spin: 0.055, amp: 0.035, freq: 2.2, density: 1 },
+  listening: { hue: 352, spin: 0.1, amp: 0.06, freq: 3.0, density: 1 },
+  thinking: { hue: 344, spin: 0.42, amp: 0.14, freq: 5.2, density: 1 },
+  speaking: { hue: 358, spin: 0.12, amp: 0.05, freq: 2.6, density: 1 },
+  // The one warm break: a directive being carried out reads amber, so doing is
+  // distinguishable from talking at a glance.
+  tool: { hue: 28, spin: 0.26, amp: 0.09, freq: 8.5, density: 1 },
+  "awaiting-approval": { hue: 44, spin: 0.02, amp: 0.02, freq: 1.6, density: 1 },
 };
 
 const POINTS = 5200;

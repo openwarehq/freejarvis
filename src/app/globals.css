@@ -22,16 +22,15 @@
 }
 
 :root {
-  /* E.D.I.T.H.
+  /* E.V. — SPIDER-OS.
    *
-   * Stark's AR language, which Territory and Perception built for Far From
-   * Home as an evolution of the FRIDAY glasses: a cool near-white cyan for
-   * everything the system is *reading*, and amber the moment it is *acting*.
-   * The film uses that switch deliberately — the overlay is calm blue until
-   * something is being targeted, and then it is orange. */
-  --h: 190;
-  --s: 88%;
-  --l: 64%;
+   * One hue, near enough, and the whole interface built out of its shades. A
+   * red console is easy to make illegible: push saturation high everywhere and
+   * every element competes, so the panels sit almost black and only the live
+   * things carry the colour. */
+  --h: 356;
+  --s: 90%;
+  --l: 58%;
 
   --accent: hsl(var(--h) var(--s) var(--l));
   --accent-dim: hsl(var(--h) var(--s) var(--l) / 0.45);
@@ -61,14 +60,14 @@
   initial-value: 172;
 }
 
-html[data-state="idle"] { --h: 190; --s: 78%; --l: 58%; }
-html[data-state="listening"] { --h: 196; --s: 94%; --l: 66%; }
-html[data-state="thinking"] { --h: 206; --s: 90%; --l: 62%; }
-html[data-state="speaking"] { --h: 187; --s: 92%; --l: 70%; }
-/* Amber for doing, not for talking — the one hue that is not in the blue
-   family, kept for the moment something is actually being acted on. */
-html[data-state="tool"] { --h: 34; --s: 96%; --l: 58%; }
-html[data-state="awaiting-approval"] { --h: 6; --s: 94%; --l: 60%; }
+html[data-state="idle"] { --h: 356; --s: 78%; --l: 52%; }
+html[data-state="listening"] { --h: 352; --s: 95%; --l: 62%; }
+html[data-state="thinking"] { --h: 344; --s: 88%; --l: 58%; }
+html[data-state="speaking"] { --h: 358; --s: 96%; --l: 64%; }
+/* The one warm break in the red — a directive being carried out reads amber,
+   so "doing" is distinguishable from "talking" at a glance on camera. */
+html[data-state="tool"] { --h: 28; --s: 96%; --l: 56%; }
+html[data-state="awaiting-approval"] { --h: 44; --s: 98%; --l: 56%; }
 
 * { box-sizing: border-box; }
 
@@ -235,4 +234,106 @@ button { font-family: inherit; color: inherit; }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+
+/* ── E.V. panels ─────────────────────────────────────────────────────────
+   The flanking columns. Deliberately near-black with a hairline edge: on a red
+   console the panels have to recede or the readings in them cannot be read. */
+
+.ev-col {
+  position: absolute;
+  top: 84px;
+  bottom: 96px;
+  width: clamp(210px, 17vw, 268px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+  overflow: hidden;
+}
+.ev-col-left { left: 18px; }
+.ev-col-right { right: 18px; }
+@media (max-width: 1180px) { .ev-col { display: none; } }
+
+.ev-panel {
+  background: linear-gradient(180deg, rgba(24, 5, 8, 0.86), rgba(9, 3, 5, 0.86));
+  border: 1px solid hsl(var(--h) 70% 50% / 0.24);
+  border-radius: 10px;
+  padding: 10px 11px 12px;
+  box-shadow: inset 0 1px 0 hsl(var(--h) 90% 70% / 0.10), 0 12px 30px -18px #000;
+}
+.ev-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: hsl(var(--h) 90% 74%);
+  margin-bottom: 10px;
+}
+.ev-head-note { font-size: 8px; letter-spacing: 0.14em; color: var(--faint); }
+.ev-dot {
+  width: 5px; height: 5px; border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.ev-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.ev-row { display: flex; align-items: center; gap: 8px; }
+.ev-glyph {
+  width: 12px; height: 12px; flex: 0 0 auto; border-radius: 2px;
+  border: 1px solid hsl(var(--h) 80% 55% / 0.55);
+  background: hsl(var(--h) 85% 50% / 0.16);
+}
+.ev-glyph[data-ok="false"] { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.04); }
+.ev-row-label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.11em;
+  color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ev-pill {
+  margin-left: auto; flex: 0 0 auto;
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.1em;
+  padding: 2px 6px; border-radius: 3px;
+  color: hsl(var(--h) 95% 78%);
+  background: hsl(var(--h) 90% 50% / 0.14);
+  border: 1px solid hsl(var(--h) 85% 55% / 0.3);
+}
+.ev-pill[data-ok="false"] { color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
+
+.ev-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.ev-bar-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.11em;
+  color: var(--dim); margin-bottom: 4px;
+}
+.ev-bar-value { color: hsl(var(--h) 92% 76%); }
+.ev-bar-value em { font-style: normal; color: var(--faint); }
+.ev-bar { height: 4px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.ev-bar i {
+  display: block; height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, hsl(var(--h) 90% 42%), hsl(var(--h) 96% 66%));
+  box-shadow: 0 0 10px hsl(var(--h) 95% 55% / 0.5);
+  transition: width 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.ev-web { width: 100%; height: auto; display: block; }
+.ev-web-ring { fill: none; stroke: hsl(var(--h) 70% 50% / 0.16); stroke-width: 0.7; }
+.ev-web-spoke { stroke: hsl(var(--h) 70% 50% / 0.2); stroke-width: 0.7; }
+.ev-web-shape {
+  fill: hsl(var(--h) 92% 52% / 0.2);
+  stroke: hsl(var(--h) 96% 66%);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px hsl(var(--h) 95% 55% / 0.55));
+  transition: all 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ev-web-label {
+  font-family: var(--mono); font-size: 6.4px; letter-spacing: 0.12em;
+  fill: var(--faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-bar i, .ev-web-shape { transition: none; }
 }

@@ -53,14 +53,14 @@ export default function TopBar({
             fontFamily: "var(--chrome)",
           }}
         >
-          E
+          ◉
         </span>
         <span
           className="text-[12px] font-medium tracking-[0.24em]"
           style={{ fontFamily: "var(--chrome)" }}
         >
-          E.D.I.T.H.
-          <sup className="ml-1 text-[7px] tracking-normal opacity-40">v2</sup>
+          E.V.
+          <sup className="ml-1 text-[7px] tracking-normal opacity-40">SPIDER-OS 2.4</sup>
         </span>
       </div>
 

@@ -14,6 +14,10 @@ import Rail, { type PanelId } from "@/components/Rail";
 import SiteView from "@/components/SiteView";
 import ReelView from "@/components/ReelView";
 import Telemetry from "@/components/Telemetry";
+import { useResource } from "@/hooks/useResource";
+import SystemStatus from "@/components/ev/SystemStatus";
+import SuitTelemetry from "@/components/ev/SuitTelemetry";
+import WebRadar from "@/components/ev/WebRadar";
 import TopBar from "@/components/TopBar";
 import ApprovalsPanel from "@/components/panels/ApprovalsPanel";
 import CronPanel from "@/components/panels/CronPanel";
@@ -52,6 +56,14 @@ export default function Deck() {
   const [site, setSite] = useState<string | null>(null);
   // The reel browser, mirrored onto the deck while post_reel runs.
   const [reel, setReel] = useState(false);
+
+  // The tool *registry*, which is not deck.tools — that is the calls made in
+  // this run. Reading the registry off it showed "0 TOOLS" on the status board
+  // while nine were loaded, which is the precise failure a status board is
+  // supposed to prevent.
+  const registry = useResource<{ toolsets?: { tools?: unknown[] }[] }>("/api/tools", 20_000);
+  const toolCount =
+    registry.data?.toolsets?.reduce((n, set) => n + (set.tools?.length ?? 0), 0) ?? 0;
   // A site opens windowed in the corner so the orb stays on screen next to
   // it; expanding is a deliberate click.
   const [siteFull, setSiteFull] = useState(false);
@@ -299,6 +311,39 @@ export default function Deck() {
         )}
 
         <main className="pointer-events-none relative min-w-0 flex-1">
+          {/* The flanking columns. Every reading in them is measured — see the
+              components — because a status board that is lit whatever the
+              machine is doing is a screensaver. */}
+          <div className="ev-col ev-col-left" hidden={!!site}>
+            <SystemStatus
+              rows={[
+                { label: "NEURAL CORE", value: deck.brain?.ready ? "ONLINE" : "OFFLINE", ok: !!deck.brain?.ready },
+                { label: "VOICE ENGINE", value: speech.engine === "elevenlabs" ? "READY" : "BROWSER", ok: speech.engine === "elevenlabs" },
+                { label: "WEB INTELLIGENCE", value: `${toolCount} TOOLS`, ok: toolCount > 0 },
+                { label: "DIRECTIVE STATE", value: deck.running ? "ACTIVE" : "STANDBY", ok: deck.running ? true : null },
+                { label: "VOICE SENSOR", value: state === "listening" ? "LISTENING" : "IDLE", ok: state === "listening" ? true : null },
+              ]}
+            />
+            <SuitTelemetry
+              bars={[
+                { label: "TOOLSET", value: toolCount, max: 12 },
+                { label: "SESSIONS", value: deck.sessions.length, max: 20 },
+                { label: "TURNS", value: deck.turns.length, max: 24 },
+              ]}
+            />
+          </div>
+
+          <div className="ev-col ev-col-right" hidden={!!site}>
+            <WebRadar
+              axes={[
+                { label: "TOOLS", value: toolCount, max: 12 },
+                { label: "SESS", value: deck.sessions.length, max: 20 },
+                { label: "TURNS", value: deck.turns.length, max: 24 },
+                { label: "CALLS", value: deck.telemetry.toolCalls, max: 12 },
+                { label: "VOICE", value: speech.engine === "elevenlabs" ? 12 : 3, max: 12 },
+              ]}
+            />
+          </div>
           <Telemetry
             data={deck.telemetry}
             brain={deck.brain}
