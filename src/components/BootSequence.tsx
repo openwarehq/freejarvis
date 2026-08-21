@@ -107,15 +107,15 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
             className="grid h-[22px] w-[22px] place-items-center rounded-[3px] text-[11px] font-bold"
             style={{ background: "var(--accent)", color: "#000", fontFamily: "var(--chrome)" }}
           >
-            F
+            E
           </span>
           <span
             className="text-[12px] font-medium tracking-[0.24em]"
             style={{ fontFamily: "var(--chrome)" }}
           >
-            FREEJARVIS
+            E.D.I.T.H.
           </span>
-          <span className="label ml-auto">INITIALISING</span>
+          <span className="label ml-auto">EVEN DEAD, I&apos;M THE HERO</span>
         </div>
 
         <div className="space-y-1.5">

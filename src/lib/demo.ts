@@ -68,9 +68,9 @@ export const SCRIPTS: DemoScript[] = [
     prompt: "Send the next one out.",
     steps: [
       { kind: "pause", ms: 150 },
-      { kind: "say", text: "Afternoon sir." },
-      { kind: "say", text: "I'll take the newest clip in the folder and put it up for you." },
-      { kind: "say", text: "I'll draft a description for it on the way through." },
+      { kind: "say", text: "Afternoon, Micah." },
+      { kind: "say", text: "Taking the newest clip in the folder and putting it up for you." },
+      { kind: "say", text: "Drafting a description for it on the way through." },
       // The pause is not a gap — it is him talking.
       //
       // The script streams as fast as it renders while the client paces the
@@ -91,8 +91,8 @@ export const SCRIPTS: DemoScript[] = [
         // attaches the file, and really stops at Share.
         live: true,
       },
-      { kind: "say", text: "That's it — video's in, description drafted." },
-      { kind: "say", text: "Share is all that's left, and I haven't touched it." },
+      { kind: "say", text: "Video's in, description drafted." },
+      { kind: "say", text: "Share is all that's left. I haven't touched it." },
     ],
   },
 

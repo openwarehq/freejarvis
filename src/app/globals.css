@@ -22,9 +22,16 @@
 }
 
 :root {
-  --h: 172;
-  --s: 85%;
-  --l: 58%;
+  /* E.D.I.T.H.
+   *
+   * Stark's AR language, which Territory and Perception built for Far From
+   * Home as an evolution of the FRIDAY glasses: a cool near-white cyan for
+   * everything the system is *reading*, and amber the moment it is *acting*.
+   * The film uses that switch deliberately — the overlay is calm blue until
+   * something is being targeted, and then it is orange. */
+  --h: 190;
+  --s: 88%;
+  --l: 64%;
 
   --accent: hsl(var(--h) var(--s) var(--l));
   --accent-dim: hsl(var(--h) var(--s) var(--l) / 0.45);
@@ -54,12 +61,14 @@
   initial-value: 172;
 }
 
-html[data-state="idle"] { --h: 172; --s: 80%; --l: 55%; }
-html[data-state="listening"] { --h: 205; --s: 92%; --l: 62%; }
-html[data-state="thinking"] { --h: 268; --s: 88%; --l: 66%; }
-html[data-state="speaking"] { --h: 38; --s: 95%; --l: 60%; }
-html[data-state="tool"] { --h: 148; --s: 82%; --l: 55%; }
-html[data-state="awaiting-approval"] { --h: 8; --s: 92%; --l: 60%; }
+html[data-state="idle"] { --h: 190; --s: 78%; --l: 58%; }
+html[data-state="listening"] { --h: 196; --s: 94%; --l: 66%; }
+html[data-state="thinking"] { --h: 206; --s: 90%; --l: 62%; }
+html[data-state="speaking"] { --h: 187; --s: 92%; --l: 70%; }
+/* Amber for doing, not for talking — the one hue that is not in the blue
+   family, kept for the moment something is actually being acted on. */
+html[data-state="tool"] { --h: 34; --s: 96%; --l: 58%; }
+html[data-state="awaiting-approval"] { --h: 6; --s: 94%; --l: 60%; }
 
 * { box-sizing: border-box; }
 

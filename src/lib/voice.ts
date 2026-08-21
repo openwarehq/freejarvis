@@ -14,7 +14,16 @@ import { getSetting } from "./db";
  * same way everything else here is.
  */
 
-export const DEFAULT_VOICE_ID = "onwK4e9ZLuTAKqWW03F9"; // Daniel — British, steady
+/**
+ * Matilda — American, middle-aged, professional.
+ *
+ * E.D.I.T.H. is voiced by Dawn Michelle King, a Marvel Studios assistant editor
+ * rather than an actor, and it shows in the right way: the delivery is flat,
+ * unhurried and entirely uninterested in being liked. The young, bright,
+ * "engaging" voices are all wrong for her — she is a defence system reading you
+ * a status, not an assistant pleased to help.
+ */
+export const DEFAULT_VOICE_ID = "XrExE9yKIg1WjnnlVkGX"; // Matilda
 export const DEFAULT_MODEL = "eleven_turbo_v2_5";
 
 /**

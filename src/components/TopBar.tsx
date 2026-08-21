@@ -53,14 +53,14 @@ export default function TopBar({
             fontFamily: "var(--chrome)",
           }}
         >
-          F
+          E
         </span>
         <span
           className="text-[12px] font-medium tracking-[0.24em]"
           style={{ fontFamily: "var(--chrome)" }}
         >
-          FREEJARVIS
-          <sup className="ml-0.5 text-[7px] tracking-normal opacity-40">OSS</sup>
+          E.D.I.T.H.
+          <sup className="ml-1 text-[7px] tracking-normal opacity-40">v2</sup>
         </span>
       </div>
 

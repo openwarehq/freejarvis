@@ -31,12 +31,13 @@ type Props = {
 };
 
 const STATE: Record<DeckState, { hue: number; spin: number; amp: number; freq: number; density: number }> = {
-  idle: { hue: 172, spin: 0.055, amp: 0.035, freq: 2.2, density: 1 },
-  listening: { hue: 205, spin: 0.1, amp: 0.06, freq: 3.0, density: 1 },
-  thinking: { hue: 268, spin: 0.42, amp: 0.14, freq: 5.2, density: 1 },
-  speaking: { hue: 38, spin: 0.12, amp: 0.05, freq: 2.6, density: 1 },
-  tool: { hue: 148, spin: 0.26, amp: 0.09, freq: 8.5, density: 1 },
-  "awaiting-approval": { hue: 8, spin: 0.02, amp: 0.02, freq: 1.6, density: 1 },
+  idle: { hue: 190, spin: 0.055, amp: 0.035, freq: 2.2, density: 1 },
+  listening: { hue: 196, spin: 0.1, amp: 0.06, freq: 3.0, density: 1 },
+  thinking: { hue: 206, spin: 0.42, amp: 0.14, freq: 5.2, density: 1 },
+  speaking: { hue: 187, spin: 0.12, amp: 0.05, freq: 2.6, density: 1 },
+  // The only warm state. Blue reads, amber acts.
+  tool: { hue: 34, spin: 0.26, amp: 0.09, freq: 8.5, density: 1 },
+  "awaiting-approval": { hue: 6, spin: 0.02, amp: 0.02, freq: 1.6, density: 1 },
 };
 
 const POINTS = 5200;

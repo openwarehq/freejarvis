@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "freejarvis",
+  title: "E.D.I.T.H.",
   description:
     "A self-hosted command deck for your own agent. Voice, tools, memory and cron, on your model and your machine.",
 };
